@@ -1,6 +1,7 @@
 'use strict';
 
 var options = require('./options')();
+const four0four = require('./404')();
 // var https = require('https');
 var http = require('http');
 var q = require('q');
@@ -130,7 +131,7 @@ function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
   } else {
-    res.status(401).send('Unauthorized');
+    four0four.unauthorized(req, res);
   }
 }
 
