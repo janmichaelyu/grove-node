@@ -30,7 +30,10 @@ if (enableLegacyProxy) {
         {
           endpoint: '/suggest',
           methods: ['get', 'post'],
-          authed: true
+          authed: true // return 401 if user not authenticated to middle-tier
+          // when `authed: false`, will authenticate proxied request if the
+          // user is authenticated. If not authenticated, it will still allow
+          // a request without authentication.
         },
         // Follow this pattern for other REST extensions
         {

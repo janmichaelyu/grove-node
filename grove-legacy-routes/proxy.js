@@ -37,7 +37,7 @@ var provider = (function() {
             if (rule.noCache) {
               args.push(noCache);
             }
-            args.push(proxy);
+            args.push(proxy.bind(null, rule));
             router[method].apply(router, args);
           } else {
             throw new Error('Rule has invalid methods: ' + rule.endpoint);
@@ -68,7 +68,7 @@ var provider = (function() {
       next();
     }
 
-    function proxy(req, res) {
+    function proxy(rule, req, res) {
       var path = req.originalUrl;
 
       var reqOptions = {
@@ -89,7 +89,11 @@ var provider = (function() {
         },
         function() {
           // TODO: might return an error too?
-          four0four.unauthorized(req, res);
+          if (rule.authed) {
+            four0four.unauthorized(req, res);
+          } else {
+            backend.call(req, reqOptions, null, res);
+          }
         }
       );
     }
