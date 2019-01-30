@@ -23,7 +23,7 @@ router.use('/api', require('./api'));
 
 if (enableLegacyProxy) {
   router.use(
-    '/v1',
+    /\/v1|\/LATEST/,
     require('../grove-legacy-routes').whitelistProxyRoute({
       authProvider: authProvider,
       whitelist: [
