@@ -87,8 +87,10 @@ var provider = (function() {
           // call backend, and pipe clientResponse straight into res
           backend.call(req, reqOptions, null, res);
         },
-        function() {
-          // TODO: might return an error too?
+        function(error) {
+          if (error !== 'Unauthorized') {
+            throw error;
+          }
           if (rule.authed) {
             four0four.unauthorized(req, res);
           } else {
