@@ -75,7 +75,7 @@ module.exports = exports = {
    * @return {Object} {@link http://docs.marklogic.com/guide/rest-dev/search#id_69918 combined query}
    */
   combined: function combined(query, qtext, options) {
-    if (isObject(qtext) && !options) {
+    if (isObject(qtext) && options === undefined) {
       options = qtext;
       qtext = null;
     }
@@ -101,7 +101,7 @@ module.exports = exports = {
    * @return {Object} {@link http://docs.marklogic.com/guide/search-dev/structured-query#id_38268 range-constraint-query}
    */
   rangeConstraint: function rangeConstraint(name, operator, values, options) {
-    if (!values && !options) {
+    if (values === undefined && options === undefined) {
       values = operator;
       operator = null;
     }

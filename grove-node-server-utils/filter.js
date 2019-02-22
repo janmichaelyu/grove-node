@@ -4,7 +4,7 @@ const queryBuilder = require('./ml-query-builder.service.js')({});
 var filter = (function() {
   var queryTextDefaultHandler = function(filter) {
     var q;
-    if (filter.constraint) {
+    if (filter.constraint !== undefined) {
       // note: the value will not be 'parsed' in this case, unless the constraint takes care of it
       q = constraint(
         filter.constraintType,
@@ -24,7 +24,7 @@ var filter = (function() {
       arr = [arr];
     }
     var queries = arr.map(function(item) {
-      if (item.not) {
+      if (item.not !== undefined) {
         // negated
         return queryBuilder.not(
           constraint(filter.constraintType, filter.constraint, 'EQ', item.not)
@@ -78,7 +78,7 @@ var filter = (function() {
 
   var buildQuery = function(filters) {
     let arr;
-    if (filters.and) {
+    if (filters.and !== undefined) {
       arr = filters.and;
       if (!Array.isArray(arr)) {
         arr = [arr];
@@ -88,7 +88,7 @@ var filter = (function() {
           return buildQuery(filter);
         })
       );
-    } else if (filters.or) {
+    } else if (filters.or !== undefined) {
       arr = filters.or;
       if (!Array.isArray(arr)) {
         arr = [arr];
@@ -98,9 +98,9 @@ var filter = (function() {
           return buildQuery(filter);
         })
       );
-    } else if (filters.not) {
+    } else if (filters.not !== undefined) {
       return queryBuilder.not(buildQuery(filters.not));
-    } else if (filters.near) {
+    } else if (filters.near !== undefined) {
       arr = filters.near;
       if (!Array.isArray(arr)) {
         arr = [arr];
@@ -128,7 +128,8 @@ var filter = (function() {
   };
 
   function constraint(type, name, operator, value) {
-    var c = queryBuilder.ext.constraint(type || 'range');
+    type = type || 'range';
+    var c = queryBuilder.ext.constraint(type);
     if (type === 'range') {
       return c(name, operator, value);
     } else if (type === 'custom') {
