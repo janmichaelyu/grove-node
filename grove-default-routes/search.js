@@ -53,15 +53,82 @@ var provider = (function() {
         );
       }
 
-      return JSON.stringify({
+      return {
         search: {
           query: structuredQuery,
           options: options
         }
-      });
+      };
     };
 
     const processSearchError = error => error.errorResponse;
+
+    const handleSearch = function(withFacets, withResults) {
+      return (req, res) => {
+        const query = req.body;
+        const options = query.options || {};
+        const start = options.start || 1;
+        const pageLength = options.pageLength || 10;
+
+        delete options.start;
+        delete options.pageLength;
+
+        const reqOptions = {
+          method: 'POST',
+          path: '/v1/search',
+          params: {
+            format: 'json',
+            start: start,
+            pageLength: pageLength,
+            options: config.namedOptions || 'all'
+          },
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          }
+        };
+        authProvider
+          .getAuth(req.session, reqOptions)
+          .then(
+            auth => {
+              if (auth) {
+                reqOptions.headers.authorization = auth;
+              }
+
+              const builtQuery = buildMarklogicQuery(query);
+
+              builtQuery.search.options['return-facets'] = withFacets;
+              builtQuery.search.options['return-results'] = withResults;
+
+              reqOptions.body = JSON.stringify(builtQuery);
+
+              backend.call(req, reqOptions, function(backendResponse, data) {
+                var json = JSON.parse(data.toString());
+                if (backendResponse.statusCode === 200) {
+                  res.json(processSearchResponse(json));
+                } else {
+                  res
+                    .status(backendResponse.statusCode)
+                    .json(processSearchError(json));
+                }
+              });
+            },
+            error => {
+              console.error('error authenticating search:', error);
+              res.status(401).json({
+                message: error
+              });
+            }
+          )
+          .catch(error => {
+            // TODO: DRY up errors and make it standard across plugins
+            console.error(error);
+            res.status(500).json({
+              message: error.message
+            });
+          });
+      };
+    };
 
     // [GJo] (#31) Moved bodyParsing inside routing, otherwise it might try to parse uploaded binaries as json..
     router.use(
@@ -71,66 +138,9 @@ var provider = (function() {
     );
     router.use(express.json());
 
-    router.post('/', (req, res) => {
-      const query = req.body;
-      const options = query.options || {};
-      const start = options.start || 1;
-      const pageLength = options.pageLength || 10;
-
-      delete options.start;
-      delete options.pageLength;
-
-      const reqOptions = {
-        method: 'POST',
-        path: '/v1/search',
-        params: {
-          format: 'json',
-          start: start,
-          pageLength: pageLength,
-          options: config.namedOptions || 'all'
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        }
-      };
-      authProvider
-        .getAuth(req.session, reqOptions)
-        .then(
-          auth => {
-            if (auth) {
-              reqOptions.headers.authorization = auth;
-            }
-
-            const builtQuery = buildMarklogicQuery(query);
-            reqOptions.body = builtQuery;
-
-            backend.call(req, reqOptions, function(backendResponse, data) {
-              var json = JSON.parse(data.toString());
-              if (backendResponse.statusCode === 200) {
-                res.json(processSearchResponse(json));
-              } else {
-                res
-                  .status(backendResponse.statusCode)
-                  .json(processSearchError(json));
-              }
-            });
-          },
-          error => {
-            console.error('error authenticating search:', error);
-            res.status(401).json({
-              message: error
-            });
-          }
-        )
-        .catch(error => {
-          // TODO: DRY up errors and make it standard across plugins
-          console.error(error);
-          res.status(500).json({
-            message: error.message
-          });
-        });
-    });
+    router.post('/facets', handleSearch(true, false));
+    router.post('/results', handleSearch(false, true));
+    router.post('/', handleSearch(true, true));
 
     return router;
   };
